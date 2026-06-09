@@ -1,5 +1,12 @@
 ﻿#include <iostream>
+#include "DataBase.h"
+#include "sqlite3.h"
 
 int main() {
-    std::cout << "Hello World!\n";
+    sqlite3* db;
+    
+    DataBase dataBase;
+
+    sqlite3_close(db);
+    return 0;
 }
