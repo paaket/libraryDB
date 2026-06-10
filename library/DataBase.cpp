@@ -38,3 +38,66 @@ void DataBase::printDataBase() const {
         }
         sqlite3_finalize(stmt);
 }
+
+void safelyGetInt(int& a) {
+    std::cin >> a;
+    while (std::cin.fail()) {
+        std::cin.clear();
+        std::cin.ignore(1000, '\n');
+        std::cout << "cin error! enter new value: ";
+        std::cin >> a;
+    }
+}
+
+void safelyGetDouble(double& a) {
+    std::cin >> a;
+    while (std::cin.fail()) {
+        std::cin.clear();
+        std::cin.ignore(1000, '\n');
+        std::cout << "cin error! enter new value: ";
+        std::cin >> a;
+    }
+}
+
+void DataBase::addBook() const {
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(dataBase, "INSERT INTO books (bookName, authorFirst, authorLast, year, genre, pagesCount, rating) VALUES (?, ?, ?, ?, ?, ?, ?);", -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::string errMsg = sqlite3_errmsg(dataBase);
+        throw std::runtime_error("addBook() error: " + errMsg);
+    }
+
+    std::string bookName, authorFirst, authorLast, genre;
+    int year, pagesCount;
+    double rating;
+
+    std::cin.ignore(1000, '\n');
+    std::cout << "bookName: ";
+    std::getline(std::cin, bookName);
+    std::cout << "authorFirst: ";
+    std::getline(std::cin, authorFirst);
+    std::cout << "authorLast: ";
+    std::getline(std::cin, authorLast);
+    std::cout << "year: ";
+    safelyGetInt(year);
+    std::cin.ignore(1000, '\n');
+    std::cout << "genre: ";
+    std::getline(std::cin, genre);
+    std::cout << "pagesCount: ";
+    safelyGetInt(pagesCount);
+    std::cout << "rating: ";
+    safelyGetDouble(rating);
+
+    sqlite3_bind_text(stmt, 1, bookName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, authorFirst.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, authorLast.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 4, year);
+    sqlite3_bind_text(stmt, 5, genre.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 6, pagesCount);
+    sqlite3_bind_double(stmt, 7, rating);
+
+    if (sqlite3_step(stmt) == SQLITE_DONE)
+        std::cout << "successfully added" << std::endl;
+
+    sqlite3_finalize(stmt);
+}
