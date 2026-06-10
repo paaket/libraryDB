@@ -20,21 +20,23 @@ void DataBase::printDataBase() const {
             throw std::runtime_error("printDataBase() error: " + errMsg);
         }
         
-        std::cout << "\n" << std::left << std::setw(50) << "bookName" << std::setw(20) << "authorFirst" << std::setw(25) << "authorLast"
-            << std::setw(5) << "year" << std::setw(15) << "genre" << std::setw(6) << "pages" << std::setw(7) << "rating" << std::endl;
+        std::cout << "\n" << std::left << std::setw(3) << "id" << std::setw(45) << "bookName" << std::setw(25) << "authorFirst" 
+            << std::setw(25) << "authorLast" << std::setw(5) << "year" << std::setw(15) << "genre" << std::setw(6) << "pages" 
+            << std::setw(7) << "rating" << std::endl;
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            const unsigned char* bookName = sqlite3_column_text(stmt, 0);
-            const unsigned char* authorFirst = sqlite3_column_text(stmt, 1);
-            const unsigned char* authorLast = sqlite3_column_text(stmt, 2);
-            int year = sqlite3_column_int(stmt, 3);
-            const unsigned char* genre = sqlite3_column_text(stmt, 4);
-            int pagesCount = sqlite3_column_int(stmt, 5);
-            double rating = sqlite3_column_double(stmt, 6);
+            int id = sqlite3_column_int(stmt, 0);
+            const unsigned char* bookName = sqlite3_column_text(stmt, 1);
+            const unsigned char* authorFirst = sqlite3_column_text(stmt, 2);
+            const unsigned char* authorLast = sqlite3_column_text(stmt, 3);
+            int year = sqlite3_column_int(stmt, 4);
+            const unsigned char* genre = sqlite3_column_text(stmt, 5);
+            int pagesCount = sqlite3_column_int(stmt, 6);
+            double rating = sqlite3_column_double(stmt, 7);
             
-            std::cout << std::left << std::setw(50) << bookName << std::setw(20) << authorFirst << std::setw(25) << authorLast
-                << std::setw(5) << year << std::setw(15) << genre << std::setw(6) << pagesCount << std::setw(7)
-                << rating << std::endl;
+            std::cout << std::left << std::setw(3) << id << std::setw(45) << bookName << std::setw(25) << authorFirst 
+                << std::setw(25) << authorLast << std::setw(5) << year << std::setw(15) << genre << std::setw(6) << pagesCount 
+                << std::setw(7) << rating << std::endl;
         }
         sqlite3_finalize(stmt);
 }
@@ -96,8 +98,82 @@ void DataBase::addBook() const {
     sqlite3_bind_int(stmt, 6, pagesCount);
     sqlite3_bind_double(stmt, 7, rating);
 
-    if (sqlite3_step(stmt) == SQLITE_DONE)
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
         std::cout << "successfully added" << std::endl;
+        sqlite3_finalize(stmt);
+    }
+    else {
+        sqlite3_finalize(stmt);
+        std::string errMsg = sqlite3_errmsg(dataBase);
+        throw std::runtime_error("addBook() error: " + errMsg);
+    }
+}
 
-    sqlite3_finalize(stmt);
+void DataBase::deleteBook() const {
+    sqlite3_stmt* stmt;
+    int idForRemove;
+
+    std::cout << "enter id to delete: ";
+    safelyGetInt(idForRemove);
+
+    int rc = sqlite3_prepare_v2(dataBase, "SELECT * FROM books WHERE id = ?;", -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::string errMsg = sqlite3_errmsg(dataBase);
+        throw std::runtime_error("deleteBook() error: " + errMsg);
+    }
+    
+    sqlite3_bind_int(stmt, 1, idForRemove);
+
+   if (sqlite3_step(stmt) == SQLITE_ROW) {
+       std::cout << "\n" << std::left << std::setw(3) << "id" << std::setw(45) << "bookName" << std::setw(25) << "authorFirst"
+           << std::setw(25) << "authorLast" << std::setw(5) << "year" << std::setw(15) << "genre" << std::setw(6) << "pages"
+           << std::setw(7) << "rating" << std::endl;
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* bookName = sqlite3_column_text(stmt, 1);
+        const unsigned char* authorFirst = sqlite3_column_text(stmt, 2);
+        const unsigned char* authorLast = sqlite3_column_text(stmt, 3);
+        int year = sqlite3_column_int(stmt, 4);
+        const unsigned char* genre = sqlite3_column_text(stmt, 5);
+        int pagesCount = sqlite3_column_int(stmt, 6);
+        double rating = sqlite3_column_double(stmt, 7);
+
+        std::cout << std::left << std::setw(3) << id << std::setw(45) << bookName << std::setw(25) << authorFirst
+            << std::setw(25) << authorLast << std::setw(5) << year << std::setw(15) << genre << std::setw(6) << pagesCount
+            << std::setw(7) << rating << std::endl;
+   }
+   else {
+       std::cout << "\nbook with this id not found" << std::endl;
+       sqlite3_finalize(stmt);
+       std::string errMsg = sqlite3_errmsg(dataBase);
+       throw std::runtime_error("deleteBook() error: " + errMsg);
+   }
+
+   sqlite3_finalize(stmt);
+   stmt = nullptr;
+
+   std::string option;
+   std::cout << "\ncontinue? (y/n): ";
+   std::cin.ignore(1000, '\n');
+   std::getline(std::cin, option);
+   if (option == "y") {
+       int rc = sqlite3_prepare_v2(dataBase, "DELETE FROM books WHERE id = ?;", -1, &stmt, nullptr);
+       if (rc != SQLITE_OK) {
+           std::string errMsg = sqlite3_errmsg(dataBase);
+           throw std::runtime_error("deleteBook() error: " + errMsg);
+       }
+       sqlite3_bind_int(stmt, 1, idForRemove);
+       if (sqlite3_step(stmt) == SQLITE_DONE) {
+           std::cout << "successfully" << std::endl;
+           sqlite3_finalize(stmt);
+       }
+       else {
+           sqlite3_finalize(stmt);
+           std::string errMsg = sqlite3_errmsg(dataBase);
+           throw std::runtime_error("deleteBook() error: " + errMsg);
+       }
+   }
+   else {
+       std::cout << "cancellation" << std::endl;
+       sqlite3_finalize(stmt);
+   }
 }

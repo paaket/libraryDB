@@ -11,6 +11,7 @@ public:
     ~DataBase();
     void printDataBase() const;
     void addBook() const;
+    void deleteBook() const;
 private:
     sqlite3* dataBase = nullptr;
 };
