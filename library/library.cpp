@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdlib>
 #include "DataBase.h"
+#include "Menu.h"
 #include "sqlite3.h"
 
 int main() {
@@ -11,13 +12,12 @@ int main() {
     
     try {
         DataBase dataBase(fileName);
-        dataBase.getDataBase();
-        dataBase.printDataBase();
+        Menu menu;
+        menu.start(dataBase);
     }
     catch (const std::exception& ex) {
         std::cout << ex.what() << std::endl;
         exit(1);
     }
-
     return 0;
 }
