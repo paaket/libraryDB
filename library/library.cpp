@@ -1,19 +1,23 @@
 ﻿#include <iostream>
+#include <string>
+#include <cstdlib>
 #include "DataBase.h"
 #include "sqlite3.h"
 
 int main() {
-    sqlite3* db;
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_open("booksLibrary.db", &db);
-    if (rc != SQLITE_OK) {
-        std::cout << "open error: " << sqlite3_errmsg(db) << std::endl;
-        return rc;
+    std::string fileName;
+    std::cout << "enter .db file name: ";
+    std::getline(std::cin, fileName);
+    
+    try {
+        DataBase dataBase(fileName);
+        dataBase.getDataBase();
+        dataBase.printDataBase();
+    }
+    catch (const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        exit(1);
     }
 
-    DataBase dataBase;
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
     return 0;
 }
