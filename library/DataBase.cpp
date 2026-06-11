@@ -177,11 +177,14 @@ void DataBase::deleteBook() const {
    }
 }
 
-void updateValue(sqlite3* dataBase, const std::string& columnName, const std::string& type) {
+void updateValue(sqlite3* dataBase, const std::string& type, const std::string& columnName = "") {
     sqlite3_stmt* stmt;
     std::string newValueText;
     int idToUpd, newValueInt;
     double newValueDouble;
+    std::string newBookName, newAuthorFirst, newAuthorLast, newGenre;
+    int newYear, newPagesCount;
+    double newRating;
     std::cout << "enter id to update: ";
     safelyGetInt(idToUpd);
     std::cin.ignore(1000, '\n');
@@ -194,6 +197,24 @@ void updateValue(sqlite3* dataBase, const std::string& columnName, const std::st
     }
     if (type == "int") {
         safelyGetInt(newValueInt);
+        std::cin.ignore(1000, '\n');
+    }
+    if (type == "all") {
+        std::cout << "bookName: ";
+        std::getline(std::cin, newBookName);
+        std::cout << "authorFirst: ";
+        std::getline(std::cin, newAuthorFirst);
+        std::cout << "authorLast: ";
+        std::getline(std::cin, newAuthorLast);
+        std::cout << "year: ";
+        safelyGetInt(newYear);
+        std::cin.ignore(1000, '\n');
+        std::cout << "genre: ";
+        std::getline(std::cin, newGenre);
+        std::cout << "pagesCount: ";
+        safelyGetInt(newPagesCount);
+        std::cout << "rating: ";
+        safelyGetDouble(newRating);
         std::cin.ignore(1000, '\n');
     }
     
@@ -235,19 +256,31 @@ void updateValue(sqlite3* dataBase, const std::string& columnName, const std::st
     std::cout << "\ncontinue? (y/n): ";
     std::getline(std::cin, option);
     if (option == "y") {
-        std::string sql = "UPDATE books SET " + columnName + " = ? WHERE id = ?;";
+        std::string sql;
+        if (type == "all")
+            sql = "UPDATE books SET bookName = ?, authorFirst = ?, authorLast = ?, year = ?, genre = ?, pagesCount = ?, rating = ? WHERE id = ?;";
+        else
+            sql = "UPDATE books SET " + columnName + " = ? WHERE id = ?;";
         int rc = sqlite3_prepare_v2(dataBase, sql.c_str(), -1, &stmt, nullptr);
         if (rc != SQLITE_OK) {
             std::string errMsg = sqlite3_errmsg(dataBase);
             throw std::runtime_error("updateTextValue() error: " + errMsg);
         }
-        if (type == "text")
-            sqlite3_bind_text(stmt, 1, newValueText.c_str(), -1, SQLITE_TRANSIENT);
-        if (type == "real")
-            sqlite3_bind_double(stmt, 1, newValueDouble);
-        if (type == "int")
-            sqlite3_bind_int(stmt, 1, newValueInt);
-        sqlite3_bind_int(stmt, 2, idToUpd);
+        if (type == "text") sqlite3_bind_text(stmt, 1, newValueText.c_str(), -1, SQLITE_TRANSIENT);
+        if (type == "real") sqlite3_bind_double(stmt, 1, newValueDouble);
+        if (type == "int") sqlite3_bind_int(stmt, 1, newValueInt);
+        if (type == "all") {
+            sqlite3_bind_text(stmt, 1, newBookName.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, newAuthorFirst.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 3, newAuthorLast.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 4, newYear);
+            sqlite3_bind_text(stmt, 5, newGenre.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 6, newPagesCount);
+            sqlite3_bind_double(stmt, 7, newRating);
+            sqlite3_bind_int(stmt, 8, idToUpd);
+        }
+        int bindId = (type == "all") ? 8 : 2;
+        sqlite3_bind_int(stmt, bindId, idToUpd);
 
         if (sqlite3_step(stmt) == SQLITE_DONE) {
             std::cout << "successfully" << std::endl;
@@ -269,14 +302,14 @@ void DataBase::updateBook() const {
     std::cout << "\nupdate menu:\n1 - update all\n2 - bookName\n3 - authorFirst\n4 - authorLast\n5 - year\n6 - genre\n7 - pagesCount\n8 - rating\n9 - exit\noption: ";
     safelyGetInt(option);
     switch (option) {
-    case 1: 
-    case 2: updateValue(dataBase, "bookName", "text"); break;
-    case 3: updateValue(dataBase, "authorFirst", "text"); break;
-    case 4: updateValue(dataBase, "authorLast", "text"); break;
-    case 5: updateValue(dataBase, "year", "int"); break;
-    case 6: updateValue(dataBase, "genre", "text"); break;
-    case 7: updateValue(dataBase, "pagesCount", "int"); break;
-    case 8: updateValue(dataBase, "rating", "real"); break;
+    case 1: updateValue(dataBase, "all"); break;
+    case 2: updateValue(dataBase, "text", "bookName"); break;
+    case 3: updateValue(dataBase, "text", "authorFirst"); break;
+    case 4: updateValue(dataBase, "text", "authorLast"); break;
+    case 5: updateValue(dataBase, "int", "year"); break;
+    case 6: updateValue(dataBase, "text", "genre"); break;
+    case 7: updateValue(dataBase, "int", "pagesCount"); break;
+    case 8: updateValue(dataBase, "real", "rating"); break;
     case 9: break;
     }
 }
