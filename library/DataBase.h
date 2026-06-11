@@ -12,6 +12,7 @@ public:
     void printDataBase() const;
     void addBook() const;
     void deleteBook() const;
+    void updateBook() const;
 private:
     sqlite3* dataBase = nullptr;
 };

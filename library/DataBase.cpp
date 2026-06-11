@@ -174,6 +174,109 @@ void DataBase::deleteBook() const {
    }
    else {
        std::cout << "cancellation" << std::endl;
-       sqlite3_finalize(stmt);
    }
+}
+
+void updateValue(sqlite3* dataBase, const std::string& columnName, const std::string& type) {
+    sqlite3_stmt* stmt;
+    std::string newValueText;
+    int idToUpd, newValueInt;
+    double newValueDouble;
+    std::cout << "enter id to update: ";
+    safelyGetInt(idToUpd);
+    std::cin.ignore(1000, '\n');
+    std::cout << "enter new value: ";
+    if (type == "text")
+        std::getline(std::cin, newValueText);
+    if (type == "real") {
+        safelyGetDouble(newValueDouble);
+        std::cin.ignore(1000, '\n');
+    }
+    if (type == "int") {
+        safelyGetInt(newValueInt);
+        std::cin.ignore(1000, '\n');
+    }
+    
+    int rc = sqlite3_prepare_v2(dataBase, "SELECT * FROM books WHERE id = ?;", -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::string errMsg = sqlite3_errmsg(dataBase);
+        throw std::runtime_error("updateTextValue() error: " + errMsg);
+    }
+    sqlite3_bind_int(stmt, 1, idToUpd);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::cout << "\n" << std::left << std::setw(3) << "id" << std::setw(45) << "bookName" << std::setw(25) << "authorFirst"
+            << std::setw(25) << "authorLast" << std::setw(5) << "year" << std::setw(15) << "genre" << std::setw(6) << "pages"
+            << std::setw(7) << "rating" << std::endl;
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* bookName = sqlite3_column_text(stmt, 1);
+        const unsigned char* authorFirst = sqlite3_column_text(stmt, 2);
+        const unsigned char* authorLast = sqlite3_column_text(stmt, 3);
+        int year = sqlite3_column_int(stmt, 4);
+        const unsigned char* genre = sqlite3_column_text(stmt, 5);
+        int pagesCount = sqlite3_column_int(stmt, 6);
+        double rating = sqlite3_column_double(stmt, 7);
+
+        std::cout << std::left << std::setw(3) << id << std::setw(45) << bookName << std::setw(25) << authorFirst
+            << std::setw(25) << authorLast << std::setw(5) << year << std::setw(15) << genre << std::setw(6) << pagesCount
+            << std::setw(7) << rating << std::endl;
+    }
+    else {
+        std::cout << "\nbook with this id not found" << std::endl;
+        sqlite3_finalize(stmt);
+        std::string errMsg = sqlite3_errmsg(dataBase);
+        throw std::runtime_error("updateTextValue() error: " + errMsg);
+    }
+
+    sqlite3_finalize(stmt);
+    stmt = nullptr;
+
+    std::string option;
+    std::cout << "\ncontinue? (y/n): ";
+    std::getline(std::cin, option);
+    if (option == "y") {
+        std::string sql = "UPDATE books SET " + columnName + " = ? WHERE id = ?;";
+        int rc = sqlite3_prepare_v2(dataBase, sql.c_str(), -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::string errMsg = sqlite3_errmsg(dataBase);
+            throw std::runtime_error("updateTextValue() error: " + errMsg);
+        }
+        if (type == "text")
+            sqlite3_bind_text(stmt, 1, newValueText.c_str(), -1, SQLITE_TRANSIENT);
+        if (type == "real")
+            sqlite3_bind_double(stmt, 1, newValueDouble);
+        if (type == "int")
+            sqlite3_bind_int(stmt, 1, newValueInt);
+        sqlite3_bind_int(stmt, 2, idToUpd);
+
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "successfully" << std::endl;
+            sqlite3_finalize(stmt);
+        }
+        else {
+            sqlite3_finalize(stmt);
+            std::string errMsg = sqlite3_errmsg(dataBase);
+            throw std::runtime_error("updateTextValue() error: " + errMsg);
+        }
+    }
+    else {
+        std::cout << "cancellation" << std::endl;
+    }
+}
+
+void DataBase::updateBook() const {
+    int option;
+    std::cout << "\nupdate menu:\n1 - update all\n2 - bookName\n3 - authorFirst\n4 - authorLast\n5 - year\n6 - genre\n7 - pagesCount\n8 - rating\n9 - exit\noption: ";
+    safelyGetInt(option);
+    switch (option) {
+    case 1: 
+    case 2: updateValue(dataBase, "bookName", "text"); break;
+    case 3: updateValue(dataBase, "authorFirst", "text"); break;
+    case 4: updateValue(dataBase, "authorLast", "text"); break;
+    case 5: updateValue(dataBase, "year", "int"); break;
+    case 6: updateValue(dataBase, "genre", "text"); break;
+    case 7: updateValue(dataBase, "pagesCount", "int"); break;
+    case 8: updateValue(dataBase, "rating", "real"); break;
+    case 9: break;
+    }
 }
